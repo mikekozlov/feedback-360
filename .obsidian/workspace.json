@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/feedback-360-step-by-step-rebuild.md",
-                "mode": "source",
+                "file": "docs/feedback-360-agentic-rebuild-process.md",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "feedback-360-step-by-step-rebuild"
+              "title": "feedback-360-agentic-rebuild-process"
             }
           }
         ]
@@ -185,8 +185,11 @@
   },
   "active": "29892c9e3a2a9f20",
   "lastOpenFiles": [
-    "docs/feedback-360-learning-path.md",
+    "docs/feedback-360-faithful-rebuild-guide.md",
+    "docs/feedback-360-agentic-rebuild-process.md",
+    "docs/feedback-360-agentic-rebuild-process.md.tmp.33596.1774255797441",
+    "docs/feedback-360-agentic-rebuild-plan.md",
     "docs/feedback-360-step-by-step-rebuild.md",
-    "docs/feedback-360-faithful-rebuild-guide.md"
+    "docs/feedback-360-learning-path.md"
   ]
 }
