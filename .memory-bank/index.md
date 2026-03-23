@@ -1,6 +1,7 @@
 # Memory Bank — Index
 
 ## Quick start (for agents)
+- [Agent rules inventory](guides/reference/agent-rules-inventory.md): производный summary repo-level правил и source precedence для coding agents. Читать первым, если нужен быстрый onboarding map, а затем переходить в каноничные SSoT-документы.
 - [Project structure](structure.md): где лежат `apps/`, `packages/`, `.memory-bank/` и как разделены слои. Читать в начале работы, чтобы сразу класть изменения в правильные места.
 - [System overview](spec/project/system-overview.md): краткая картина продукта, акторов и ключевых ограничений MVP. Читать для быстрого доменного контекста перед реализацией.
 - [Glossary](spec/glossary.md): каноничные определения терминов (campaign, assignment, anonymity, NA/UNSURE и т.д.). Читать, чтобы не путать смыслы в коде/тестах/доках.

@@ -9,8 +9,9 @@ parent: .memory-bank/guides/index.md
 # Reference
 Status: Active (2026-03-09)
 
-Reference — это быстрые lookup-материалы для пользователей и операторов.
+Reference — это быстрые lookup-материалы для пользователей, операторов и внутренних workflow.
 
+- [Agent rules inventory](agent-rules-inventory.md) — производный summary repo-level правил для coding agents, со ссылками на каноничные источники. Читать перед крупными изменениями или onboarding нового агента, чтобы быстро восстановить source precedence и non-negotiable constraints.
 - [Roles and visibility](roles-and-visibility.md) — кратко кто что видит и какие surfaces доступны. Читать, когда нужен короткий operational lookup по ролям.
 - [Campaign statuses](campaign-statuses.md) — быстрый справочник по lifecycle кампаний. Читать, когда нужно быстро вспомнить, что означает статус и где editing locks.
 - [Campaign editability and freeze](campaign-editability-and-freeze.md) — быстрый ответ, что можно менять в `draft`, `started`, `locked` и `ended`. Читать, когда нужно быстро понять mutability rules без чтения полной domain-спеки.

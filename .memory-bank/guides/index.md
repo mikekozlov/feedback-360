@@ -22,12 +22,13 @@ Status: Draft (2026-03-07)
 - [Tutorials](tutorials/index.md): учебные walkthrough-документы для первого знакомства с системой. Читать, когда нужно провести человека по “первому успешному пути” и дать контекст по ходу.
 - [How-to guides](how-to/index.md): практические инструкции под конкретную задачу. Читать, когда нужно быстро выполнить действие и не утонуть в архитектурных деталях.
 - [Explanation](explanation/index.md): концептуальные объяснения, как система устроена и почему выглядит именно так. Читать, когда нужно понять модель продукта, а не только воспроизвести шаги.
-- [Reference](reference/index.md): короткие lookup-материалы для пользователей и операторов. Читать, когда нужно быстро свериться с ролями, экранами, статусами или маршрутами.
+- [Reference](reference/index.md): короткие lookup-материалы для пользователей, операторов и внутренних workflow. Читать, когда нужно быстро свериться с ролями, экранами, статусами, маршрутами или repo-level working rules.
 
 ## Первые документы
 
 - [Open `XE-001` results on beta](how-to/open-xe-001-results-on-beta.md): как выпустить XE token, войти на `beta` и открыть результаты как `subject`, `manager` или `hr_admin`. Читать, когда нужно быстро показать живой сценарный run.
 - [How `XE-001` works](explanation/xe-001-walkthrough.md): как устроен `XE-001` как end-to-end сценарий и где в нём runner, а где UI. Читать, чтобы не путать автоматический setup и ручную проверку.
+- [Agent rules inventory](reference/agent-rules-inventory.md): сжатая operational map repo-level правил для coding agents. Читать при onboarding нового агента или перед крупными изменениями, чтобы быстро восстановить source precedence и рабочий цикл.
 - [Roles and visibility](reference/roles-and-visibility.md): быстрый lookup по ролям и основным правилам видимости. Читать, когда нужен short-form operational answer без глубоких specs.
 - [Campaign statuses](reference/campaign-statuses.md): краткое значение lifecycle статусов кампании. Читать, когда нужно быстро вспомнить, что означает текущий статус и какие ограничения с ним связаны.
 
