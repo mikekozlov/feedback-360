@@ -28,6 +28,9 @@ source_transcripts:
 - [[#Часть 0 — Как проходить: стадийный путь]]
 - [[#Канонический путь — Стадии 0–10]]
 - [[#Выравнивание с методологией автора (DEKSDEN, части 1–2)]]
+
+**Справочники и приложения** (нелинейные — открываются по ссылкам из стадий, не для сквозного чтения):
+
 - [[#ЧАСТЬ I — Контекст и навигация]]
 - [[#ЧАСТЬ II — Философия подхода (the why)|ЧАСТЬ II — Философия подхода (the *why*)]]
 - [[#ЧАСТЬ III — Архитектура (the what)|ЧАСТЬ III — Архитектура (the *what*)]]
@@ -51,7 +54,7 @@ source_transcripts:
 
 ### Режим A — Full study (~6–10 часов вдумчивого чтения)
 
-Идите от начала к концу, делая паузы на checkpoint'ах в Части V и Части VI. Перед каждой главой Части V прочитайте соответствующий раздел Части III, чтобы знать, какой компонент архитектуры будете строить. Это режим для тех, кто действительно собирается пересобрать проект.
+Это **вторичный** режим относительно стадийного пути (Режим S): он для тех, кто уже прошёл Стадии 0–10 и хочет сплошное чтение справочников. Идите от начала к концу, делая паузы на checkpoint'ах в Части V и Части VI; перед каждой главой Части V читайте соответствующий раздел Части III, чтобы знать, какой компонент архитектуры разбираете.
 
 ### Режим B — Fast-track (~1.5 часа)
 
@@ -88,9 +91,9 @@ source_transcripts:
 | [[#Стадия 1 — Monorepo foundation]] | pnpm workspaces, Biome, TS strict | `pnpm install` и `pnpm lint` зелёные на пустом каркасе |
 | [[#Стадия 2 — Memory Bank и documentation skeleton]] | MBB, index+annotated links, spec/plans/adr | index содержит annotated links; WHAT/WHY/delivery разделены |
 | [[#Стадия 3 — DB baseline и seed runner]] | Drizzle, `company_id`, soft delete, temporal, seed | миграция применяется, seed грузится, health check ок |
-| [[#Стадия 4 — Deterministic delivery path: contract + core + client + CLI]] | единый нерв системы | `cli ping --json` возвращает `OperationResult`; acceptance зелёный |
+| [[#Стадия 4 — Deterministic delivery path: contract + core + client + CLI]] | единый нерв системы | `ping --json` возвращает `OperationResult`; acceptance зелёный |
 | [[#Стадия 5 — Первые domain slices]] | identity-tenancy, org, models | given-when-then per slice через CLI+seed |
-| [[#Стадия 6 — Policy-heavy домен]] | campaigns, matrix, questionnaires, results, анонимность | анонимность скрывает группу `<2`; lifecycle-переходы; расчёты верны |
+| [[#Стадия 6 — Policy-heavy домен]] | campaigns, matrix, questionnaires, results, анонимность | анонимность скрывает группу `<3` (порог 3 оценщика); lifecycle-переходы; расчёты верны |
 | [[#Стадия 7 — Notifications: outbox и scheduling]] | generate→dispatch→retry, timezone | outbox-цикл и retry воспроизводимы на seed |
 | [[#Стадия 8 — Тонкий web layer]] | Next.js route handlers, shadcn, `data-testid` | web зовёт тот же client; в route handler нет бизнес-логики |
 | [[#Стадия 9 — Hardening, quality gates, evidence]] | 4 уровня тестов, `pnpm checks`, simplify, 3 окружения | полный quality gate зелёный; evidence-блок записан |
@@ -247,7 +250,7 @@ flowchart TD
 
 - [[#Глава 1: Monorepo Foundation]] — что лежит: пошаговый справочник стадии (почему pnpm workspaces, шаги 1.1–1.6, Checkpoint `pnpm install` + `pnpm lint`); зачем: основная обучающая реконструкция каркаса.
 - [[#3.1. Технологический стек с версиями]] — что лежит: таблица стек/версия/зачем (TypeScript 5.8.x, pnpm 10+, Biome 1.9.x, Vitest 3.2.x …); зачем: обоснование пиннинга версий и фраза «Biome заменяет одновременно ESLint + Prettier … пример упрощения кода из принципа 2.7».
-- [[#3.2. Структура monorepo]] — что лежит: mermaid-дерево целевой структуры (`apps/web`, `apps/cli`, `packages/*`, root config) с цветовой кодировкой; зачем: визуально зафиксировать целевую форму и место `packages/config` и `tsconfig.base.json`.
+- [[#3.2. Структура monorepo]] — что лежит: mermaid-дерево целевой структуры (`apps/web`, `packages/cli`, `packages/*`, root config) с цветовой кодировкой; зачем: визуально зафиксировать целевую форму и место `packages/config` и `tsconfig.base.json`.
 - [[#Module 1: Поднять monorepo foundation]] — что лежит: учебный модуль с Goal/Build/Read/Done when/Artifacts; зачем: критерии «готово» и список артефактов для воспроизведения.
 
 #### ✅ Верификация (стадия пройдена, когда)
@@ -508,7 +511,7 @@ Given-when-then: **Given** пустая база и заданный `DATABASE_U
 
 #### 🔗 Выравнивание с автором
 
-Концепции 5, 6, 7, 11, 24 из [[#Выравнивание с методологией автора (DEKSDEN, части 1–2)]]: спецификация=шаги+grounding и вертикальные слайсы под приёмочный сценарий (5, 6), сам acceptance given-when-then (7), изоляция окружений и deterministic-данные (11), доменная multi-tenancy/snapshot как ядро feedback-360 (24). Якоря: «**seed** — предопределённый набор данных, заливаемый в БД для теста и вычищаемый после» (часть 1, глоссарий, строка 226); «при тестировании он заливает **seed** в БД и чистит после, но может ошибиться и снести не только результаты теста» (часть 1, тема 9 «Изоляция окружений local/beta/prod», строка 118) — поэтому seed-runner и держит advisory-lock и блокирует `seed.run` при `APP_ENV === 'beta'`.
+Концепции 5, 6, 7, 11, 24 из [[#Выравнивание с методологией автора (DEKSDEN, части 1–2)]]: спецификация=шаги+grounding и вертикальные слайсы под приёмочный сценарий (5, 6), сам acceptance given-when-then (7), изоляция окружений и deterministic-данные (11), доменная multi-tenancy/snapshot как ядро feedback-360 (24). Якоря: «**seed** — предопределённый набор данных, заливаемый в БД для теста и вычищаемый после» (часть 1, глоссарий, строка 226); «при тестировании он заливает **seed** в БД и чистит после, но может ошибиться и снести не только результаты теста» (часть 1, тема 9 «Изоляция окружений local/beta/prod», строка 118) — поэтому seed-runner держит advisory-lock и блокирует `seed.run` в beta **только при активной (непросроченной) XE-блокировке** беты (`getXeLock('beta')`), а не на каждом `APP_ENV === 'beta'`.
 
 #### ⚠️ Антипаттерны стадии · 🧩 Артефакты
 
@@ -538,7 +541,7 @@ Given-when-then: **Given** пустая база и заданный `DATABASE_U
 2. **Core handler** (`runSystemPing`): `parse вход → okResult({ pong: "ok", timestamp })`.
 3. **Dispatcher**: `dispatchOperation({ operation: "system.ping" })` находит `runSystemPing`.
 4. **Client**: `client.systemPing()` через in-proc transport.
-5. **CLI**: `cli ping --json`.
+5. **CLI**: `ping --json`.
 
 Результат — стабильный `OperationResult`:
 
@@ -548,11 +551,13 @@ Given-when-then: **Given** пустая база и заданный `DATABASE_U
 
 Тот же `OperationResult` вы получите и через HTTP transport в браузере — отличается только доставка, не содержимое.
 
+> **Сверка с кодом (REFERENCE_ROOT).** В оригинальном репозитории `system.ping` доступен как **клиентский метод** `client.systemPing()` (in-proc), а **отдельной CLI-команды `ping` в `packages/cli` нет**. CLI запускается без `bin`, через `tsx src/index.ts` (root-обёртка `pnpm seed -- <args>`). Здесь вы заводите тривиальную `ping`-команду в **своём** `REBUILD_ROOT` как первый сквозной слайс; форма `pong: "ok"` совпадает с реальным `runSystemPing`.
+
 #### 📐 Диаграмма: путь запроса (deterministic delivery path)
 
 ```mermaid
 flowchart LR
-    CLI["apps/cli<br/>cli ping --json"] --> CLIENT["Feedback360Client<br/>client.systemPing()"]
+    CLI["packages/cli<br/>ping --json"] --> CLIENT["Feedback360Client<br/>client.systemPing()"]
     CLIENT --> RT["ClientRuntime<br/>invokeOperation()"]
     RT --> TR["OperationTransport<br/>in-proc"]
     TR --> CORE["dispatchOperation<br/>core router"]
@@ -570,7 +575,7 @@ flowchart LR
 1. `packages/api-contract`: `OperationResult<T>`, `OperationError` + typed коды, `okResult`/`errorResult`, `DispatchOperationInput`, `KnownOperation`, parse-функции.
 2. `packages/core`: `operationHandlers` map + `dispatchOperation()` (parse → known? → handler) + первый handler `runSystemPing`.
 3. `packages/client`: `OperationTransport` interface, `createInprocTransport`, `ClientRuntime.invokeOperation()`, `Feedback360Client` с методом `systemPing()`.
-4. `apps/cli`: `commander`-команда `ping` с `--json`, использующая `createInprocClient()`.
+4. `packages/cli`: `commander`-команда `ping` с `--json`, использующая `createInprocClient()`.
 
 #### 📖 Что прочитать (REFERENCE_ROOT)
 
@@ -590,7 +595,7 @@ pnpm typecheck                                   # tsc --noEmit — зелёны
 pnpm lint                                        # Biome — зелёный
 
 # When: вызываем первую операцию через CLI в JSON-режиме
-pnpm --filter @feedback-360/cli exec cli ping --json
+pnpm --filter @feedback-360/cli exec tsx src/index.ts -- ping --json
 
 # Then: получаем ровно этот OperationResult
 # { "ok": true, "data": { "pong": "ok" } }
@@ -598,12 +603,12 @@ pnpm --filter @feedback-360/cli exec cli ping --json
 
 Чеклист:
 
-- [ ] `cli ping --json` печатает `{ "ok": true, "data": { "pong": "ok" } }`.
+- [ ] `ping --json` печатает `{ "ok": true, "data": { "pong": "ok" } }`.
 - [ ] Неизвестная операция возвращает `{ ok: false, error: { code: "not_found", … } }`, а **не** throw.
 - [ ] Тот же handler вызывается через in-proc transport в unit-тесте без mock-ов HTTP.
 - [ ] Evidence-блок записан: дата + команды + вывод.
 
-Given-when-then: **Given** seed `S1_company_min` загружен, **When** `cli membership list --json` от лица `hrAdmin`, **Then** ответ `{ ok: true, data: { memberships: [...] } }` со стабильными handles (см. [[#Шаг 7.3: Seed scenarios с handles]]).
+Given-when-then: **Given** собран каркас contract→core→client→CLI, **When** `ping --json`, **Then** `{ ok: true, data: { pong: "ok" } }` — один и тот же `OperationResult` приходит и через in-proc CLI, и через HTTP-transport.
 
 #### 🔗 Выравнивание с автором
 
@@ -612,7 +617,7 @@ Given-when-then: **Given** seed `S1_company_min` загружен, **When** `cli
 #### ⚠️ Антипаттерны стадии · 🧩 Артефакты
 
 - Антипаттерны: бизнес-логика в CLI/route handler вместо core ([[#Антипаттерн 3: Бизнес-логика в route handlers, CLI или UI]]); acceptance без seed/handles ([[#Антипаттерн 5: Acceptance без seed/handles]]).
-- Артефакты: рабочий `cli ping --json`; первый зелёный acceptance через CLI; evidence-блок в FT-документе.
+- Артефакты: рабочий `ping --json`; первый зелёный acceptance через CLI; evidence-блок в FT-документе.
 
 ---
 
@@ -650,7 +655,7 @@ Given-when-then: **Given** seed `S1_company_min` загружен, **When** `cli
 { "ok": true, "data": { "items": [ { "companyId": "...", "companyName": "...", "role": "hr_admin" } ] } }
 ```
 
-Важная **doc-vs-code сверка**: реальный выходной ключ db-слоя — `items`. В справочнике Шаг 8.1 (строка 3867, тип `MembershipListOutput` открывается на 3866) для иллюстрации показан ключ `memberships` — это расхождение «документ против кода»; ваш слайс должен следовать коду (`items`).
+Важная **doc-vs-code сверка**: реальный выходной ключ db-слоя — `items`. В справочнике (раздел «Шаг 8.1: Contract») для иллюстрации показан ключ `memberships` — это расхождение «документ против кода»; ваш слайс должен следовать коду (`items`). И ещё: `membership.list` в оригинале достижим через клиентский метод `client.membershipList()` — отдельной CLI-команды `membership list` в `packages/cli` пока нет (в каталоге команд помечена `(future)`), поэтому cli-слой этого слайса вы заводите в своём `REBUILD_ROOT`.
 
 #### 📐 Диаграмма: три первых слайса по одному шаблону
 
@@ -696,7 +701,7 @@ pnpm db:migrate && pnpm db:health         # схема + health зелёный
 pnpm seed seed --scenario S1_company_min --json   # стабильные handles (company.main, employee.hr_admin)
 
 # When: гоняем первый слайс через всю вертикаль
-pnpm seed cli membership list --json      # от лица hrAdmin
+pnpm seed membership list --json      # от лица hrAdmin
 
 # Then: стабильный OperationResult (реальный db-ключ строк — items)
 # { "ok": true, "data": { "items": [ ... ] } }
@@ -709,14 +714,14 @@ pnpm --filter @feedback-360/core test     # зелёные unit-тесты run*-
 Чеклист:
 
 - [ ] Минимум **2 слайса** доставлены целиком (например `identity-tenancy` + `org`) одинаковым ритмом contract→core→db→client→cli→test→docs.
-- [ ] `cli membership list --json` от `hrAdmin` на `S1_company_min` печатает `{ ok: true, data: { items: [...] } }` со **стабильными** handles, а не случайными UUID.
+- [ ] `membership list --json` от `hrAdmin` на `S1_company_min` печатает `{ ok: true, data: { items: [...] } }` со **стабильными** handles, а не случайными UUID.
 - [ ] `S2_org_basic` даёт инварианты `companies=1`, `employees=8`, `departments=3` — детерминированно при каждом запуске.
 - [ ] Мутация без нужной роли (`employee` зовёт `runEmployeeUpsert`) возвращает `{ ok: false, error: { code: 'forbidden' } }`, а **не** throw; `runMembershipList` без `context.userId` → `unauthenticated`.
 - [ ] Публикация модели из недопустимого состояния маппится в код `'invalid_transition'` (state machine `draft → published`).
 - [ ] `pnpm checks` (lint + typecheck + test + test:db + web build) зелёный — quality gate перед переводом фичи в Completed.
 - [ ] Для каждого слайса есть FT page и evidence-блок с датой, командами и выводом.
 
-Given-when-then: **Given** seed `S1_company_min` загружен со стабильными handles, **When** вызываем `cli membership list --json` от лица `hrAdmin`, **Then** ответ `{ ok: true, data: { items: [...] } }`, и тот же сценарий воспроизводится при каждом прогоне seed.
+Given-when-then: **Given** seed `S1_company_min` загружен со стабильными handles, **When** вызываем `membership list --json` от лица `hrAdmin`, **Then** ответ `{ ok: true, data: { items: [...] } }`, и тот же сценарий воспроизводится при каждом прогоне seed.
 
 #### 🔗 Выравнивание с автором
 
@@ -1080,7 +1085,7 @@ Given-when-then: **Given** seed `S9_campaign_completed_with_ai` загружен
 Возьмём фичу «дашборды результатов» (`FT` на операциях `results.getMyDashboard` / `getHrView`). Как агент доводит её до `Completed` через все 4 уровня:
 
 1. **Unit (level 1):** проверка расчёта итогового балла на весах `manager=40 / peers=30 / subordinates=30 / self=0` и порога анонимности (группа с `< 3` оценщиками по умолчанию **скрывается** — `small_group_policy=hide`; при политике `merge_to_other` peers + subordinates сливаются в `Other`, и порог применяется к объединённой группе). БД не нужна — `cross-env FEEDBACK360_SKIP_DB_TESTS=1 vitest run`.
-2. **Contract (level 1):** `parseGetHrViewOutput` принимает валидный DTO и отвергает кривой — форма ответа зафиксирована.
+2. **Contract (level 1):** `parseResultsGetHrViewOutput` принимает валидный DTO и отвергает кривой — форма ответа зафиксирована.
 3. **Integration (level 2):** `ft-0055-results-views.test.ts` поднимает реальную БД, прогоняет use-case целиком; в curated fast-lane (`test:db`) он один из трёх файлов.
 4. **CLI-acceptance (level 3):** seed сценария (например `S8_campaign_ended`) выдаёт стабильные handles, given-when-then проверяется на них, а не на «id, подсмотренном в базе руками».
 5. **E2E (level 4):** Playwright-спека на **beta**-стенде убеждается, что `employee` не видит сырые комментарии, а `hr_admin` видит.
@@ -1251,7 +1256,7 @@ node -e "const f=require('fs');const j=JSON.parse(f.readFileSync('scenarios/XE-0
 - [ ] Вы можете назвать canonical feature areas (в ADR их 9), а `shared/` обоснован (только модули без явного owner).
 - [ ] `ft-0142` (4 пакета) и `ft-0143` зелёные — public operation names и DTO behavior не изменились.
 - [ ] `pnpm --filter @feedback-360/xe-runner test` проходит; XE-001 берёт environment lock и при двойном запуске бросает `invalid_transition`, повторный прогон **idempotent** (passed-фазы пропускаются).
-- [ ] Анонимность по факту: `openText.rawText` = `undefined` для employee/manager и present для HR при `anonymityThreshold: 3`, `smallGroupPolicy: "merge_to_other"`.
+- [ ] Анонимность по факту: `openText.rawText` = `undefined` для employee/manager и present для HR при `anonymityThreshold: 3`, `smallGroupPolicy: "merge_to_other"` (XE-сценарий явно переопределяет дефолтный `"hide"`).
 - [ ] Каждый экран имеет `SCR-*`, протянутый в `data-testid` и имена скриншотов; selector-ы **не** опираются на Tailwind-классы.
 - [ ] Evidence-блок записан: дата + команды + результаты.
 
@@ -1297,7 +1302,7 @@ Given-when-then: **Given** другой XE-run уже активен, **When** �
 | 21 | Skill + CLI вместо «толстого» MCP | *(мета)* | прим. ниже | «MCP не даёт никакой дополнительной ценности» (ч2·т11) |
 | 22 | Reverse-engineering в обобщённый скилл | *(мета)* | прим. ниже | «у нас уже есть результат — промпт выводим из него» (ч2·т7) |
 | 23 | Язык/токены; файлы > таск-трекеры | *(мета)* | прим. ниже | «для агента сильно удобнее писать файлик» (ч2·т8,12) |
-| 24 | Доменная специфика feedback-360 (анонимность `<2`, роли, кампании) | 5, 6 | Часть III; Часть V гл9–11 | «<2 ответов — группа не показывается» (ч2·т4) |
+| 24 | Доменная специфика feedback-360 (анонимность `<3`, роли, кампании) | 5, 6 | Часть III; Часть V гл9–11 | «<2 ответов — группа не показывается» (ч2·т4) — *автор оговорился «меньше двух»; код реализует порог 3 (ADR-0002, `results.ts`), см. [[#Стадия 6 — Policy-heavy домен]]* |
 
 **Примечание о мета-концепциях (21–23).** Это концепции **уровня личного workflow автора**, не специфичные для самого feedback-360: они про инструментарий (MCP→Skill+CLI через MCPorter, reverse-engineering проекта в обобщённый скилл, выбор «файлы vs таск-трекеры», русский промпт / английский код). Для **воспроизведения проекта** они не обязательны, но важны для понимания, *как автор работает*. Если вы строите свой агентный workflow поверх этого rebuild — держите их в виду; в самом маршруте 0–10 они намеренно не превращены в стадии.
 
@@ -1781,15 +1786,16 @@ graph TD
     ROOT --> CFG["pnpm-workspace.yaml<br/>package.json<br/>biome.json<br/>tsconfig.base.json"]
 
     APPS --> WEB["web/<br/>Next.js 15 App Router"]
-    APPS --> CLI["cli/<br/>Commander CLI"]
     WEB --> PW["playwright/<br/>smoke tests"]
 
     PKGS --> AC["api-contract/<br/>typed operation contracts"]
     PKGS --> CORE["core/<br/>business logic + dispatcher"]
     PKGS --> CLIENT["client/<br/>typed client + transport"]
     PKGS --> DB["db/<br/>Drizzle schema + migrations"]
+    PKGS --> CLI["cli/<br/>Commander CLI"]
     PKGS --> CFG_PKG["config/<br/>shared TS/Biome config"]
     PKGS --> TK["testkit/<br/>shared test utilities"]
+    PKGS --> XE["xe-runner/<br/>cross-epic scenario runner"]
 
     style ROOT fill:#fff,stroke:#0d6efd,stroke-width:3px
     style APPS fill:#e2e3e5,stroke:#6c757d
@@ -1804,8 +1810,8 @@ graph TD
 
 Два верхнеуровневых каталога:
 
-- `packages/*` — **библиотеки** (api-contract, core, client, db, config, testkit). Версионируются, экспортируются по имени `@feedback-360/<name>`.
-- `apps/*` — **приложения** (web, cli). Не экспортируются — это deployment artefacts.
+- `packages/*` — **библиотеки** (api-contract, core, client, db, cli, config, testkit, xe-runner). Версионируются, экспортируются по имени `@feedback-360/<name>`.
+- `apps/*` — **приложения** (только `web`). Не экспортируется как библиотека — это deployment artefact. CLI, хотя и «приложение» по смыслу, физически лежит в `packages/cli` как пакет `@feedback-360/cli`.
 
 Memory Bank лежит **не внутри** какого-то пакета, а как top-level директория `.memory-bank/`. Это **сознательное решение**: MBB не принадлежит одному пакету, он описывает проект целиком.
 
@@ -1817,7 +1823,7 @@ graph TD
     CORE["core<br/>handlers, dispatcher"]
     CLIENT["client<br/>runtime, feature methods"]
     DB[("db<br/>Drizzle schema<br/>migrations")]
-    CLI["apps/cli<br/>Commander commands"]
+    CLI["packages/cli<br/>Commander commands"]
     WEB["apps/web<br/>Next.js routes + UI"]
 
     AC --> CORE
@@ -2157,7 +2163,7 @@ Client package предоставляет одинаковый typed API нез�
 graph TB
     subgraph "Application Code"
         WEB["apps/web<br/>Server Components<br/>+ Route Handlers"]
-        CLI["apps/cli<br/>Commander commands"]
+        CLI["packages/cli<br/>Commander commands"]
         TEST["Tests<br/>Vitest"]
     end
 
@@ -3381,20 +3387,20 @@ Organization:
 ## Задача
 Реализуй FT-0013: CLI с первым end-to-end slice.
 
-В apps/cli/src/:
+В packages/cli/src/:
 - Commander с командами: ping, seed, membership-list.
 - Dual output: human default + --json.
 - createInprocClient() — без HTTP-сервера.
 
 Acceptance:
-  cli ping --json → { "ok": true, "data": { "pong": "ok" } }
+  ping --json → { "ok": true, "data": { "pong": "ok" } }
 
 Правило: CLI = thin shell. ZERO business logic.
 ```
 
 #### Checkpoint фазы 6
 
-- `cli ping --json` возвращает `{ "ok": true, "data": { "pong": "ok", "timestamp": "..." } }`.
+- `ping --json` возвращает `{ "ok": true, "data": { "pong": "ok", "timestamp": "..." } }`.
 - Delivery loop работает end-to-end через 5 слоёв (contract → core → db → client → cli) **без браузера**.
 
 ---
@@ -3436,7 +3442,7 @@ Acceptance:
 ### 4) Client (packages/client/src/features/)
 - Typed method: parse input → invokeOperation → typed result.
 
-### 5) CLI (apps/cli/)
+### 5) CLI (packages/cli/)
 - Команда 1:1 к операции, human + --json.
 
 ### 6) Tests
@@ -3615,7 +3621,7 @@ UI вызывает ТЕ ЖЕ операции, что и CLI.
 | 3: Specs → EP/FT | #7, #8 | 46 features, playbook, matrix | Каждая FT с scenario |
 | 4: AGENTS.md | #9 | Onboarding для агентов | Агент понимает проект |
 | 5: Scaffold + DB | #10, #11 | Monorepo + migrations | `pnpm install` + `db:health` |
-| 6: Delivery loop | #12, #13, #14 | Contract + Core + Client + CLI | `cli ping --json` ok |
+| 6: Delivery loop | #12, #13, #14 | Contract + Core + Client + CLI | `ping --json` ok |
 | 7: Domain slices | #15 (×N) | 40+ operations | `pnpm checks` green |
 | 8: UI | #16, #17 | Next.js routes + pages | UI = same ops as CLI |
 | 9: Hardening | #18 | Feature areas + XE + screens | XE end-to-end pass |
@@ -3623,6 +3629,8 @@ UI вызывает ТЕ ЖЕ операции, что и CLI.
 ---
 
 ## ЧАСТЬ V — Пошаговое техническое восстановление (the *how-detailed*)
+
+> 📚 **Справочник C (Reference).** Это не маршрут, а подробный технический companion (код + checkpoint'ы). Канонический путь — [[#Часть 0 — Как проходить: стадийный путь]] и Стадии 0–10; сюда заходите за деталями реализации по ссылкам из стадий.
 
 Эта часть — **практическое руководство** с кодом и checkpoint'ами после каждой главы. Companion к Части IV (промпты) и Части III (архитектура).
 
@@ -3778,7 +3786,7 @@ mkdir -p packages/core/src
 mkdir -p packages/client/src
 mkdir -p packages/db/src
 mkdir -p apps/web/src
-mkdir -p apps/cli/src
+mkdir -p packages/cli/src
 ```
 
 #### Checkpoint главы 1
@@ -4337,7 +4345,7 @@ export const createCampaignsClientMethods = (
 #### Шаг 7.1: CLI entry point
 
 ```typescript
-// apps/cli/src/index.ts
+// packages/cli/src/index.ts
 import { Command } from "commander";
 import { createInprocClient } from "@feedback-360/client";
 
@@ -4384,7 +4392,7 @@ export const seedScenarios = [
 
 #### Checkpoint главы 7
 
-- `cli ping --json` выдаёт `{ "ok": true, "data": { "pong": "ok" } }`.
+- `ping --json` выдаёт `{ "ok": true, "data": { "pong": "ok" } }`.
 - `cli seed --scenario S1_company_min --json` создаёт компанию и возвращает handles.
 
 ---
@@ -4399,7 +4407,7 @@ export const seedScenarios = [
 sequenceDiagram
     autonumber
     actor User as User / Agent
-    participant CLI as apps/cli<br/>command
+    participant CLI as packages/cli<br/>command
     participant Client as Feedback360Client<br/>(client/features)
     participant Runtime as ClientRuntime<br/>(client/shared)
     participant Transport as OperationTransport<br/>(in-proc)
@@ -4985,6 +4993,8 @@ Tokens, semantic statuses, component rules — в `.memory-bank/spec/ui/design-s
 
 ## ЧАСТЬ VI — Curriculum, обучающий маршрут из 9 модулей
 
+> 📚 **Справочник D (Reference).** Это не отдельный маршрут, а curriculum-разбор (9 обучающих модулей + 9 правил обучения), на который ссылается раздел «Как проходить». Канонический путь — Стадии 0–10.
+
 Эта часть отличается от Части V. Часть V рассказывает, **как технически собрать** проект. Часть VI рассказывает, **как учиться, не превращая rebuild в бездумное копирование**.
 
 Здесь используются два фиксированных пути:
@@ -5534,6 +5544,8 @@ Tokens, semantic statuses, component rules — в `.memory-bank/spec/ui/design-s
 
 ## ЧАСТЬ VII — Антипаттерны и контрольные точки
 
+> 📚 **Справочник E (Reference).** Это не маршрут, а каталог антипаттернов и контрольных точек. Стадии 0–10 ссылаются на конкретные антипаттерны точечно; читать подряд не обязательно.
+
 Эта часть короткая, но критически важная. Каждый антипаттерн — это **то, во что упирался автор или другие практики** при попытке воспроизвести подобный подход.
 
 ### 8 антипаттернов с пояснениями
@@ -5544,7 +5556,7 @@ Tokens, semantic statuses, component rules — в `.memory-bank/spec/ui/design-s
 
 **Почему плохо:** это ломает саму идею deterministic delivery path и **превращает браузер в место, где впервые появляется бизнес-логика**. Дальше каждое расширение фичи будет требовать UI-теста, потому что иначе её невозможно проверить. Браузерные тесты медленные и хрупкие, особенно для агентов.
 
-**Как исправить:** удалить `apps/web/`, начать с `packages/core/` + `apps/cli/`. UI вернётся в Module 6, не раньше.
+**Как исправить:** удалить `apps/web/`, начать с `packages/core/` + `packages/cli/`. UI вернётся в Module 6, не раньше.
 
 #### Антипаттерн 2: Смешать `spec`, `plans` и `adr`
 
@@ -5676,6 +5688,8 @@ Assert: result.ok === true && result.data.status === "started".
 ---
 
 ## ЧАСТЬ VIII — Эволюция через git, девять фаз
+
+> 📚 **Справочник F (Reference).** Это не маршрут, а исторический разбор эволюции репозитория по 9 git-фазам (для понимания, как подход вырос). Канонический путь — Стадии 0–10.
 
 Эта часть показывает, как репозиторий рос **по фазам**, а не как «один большой initial commit». Это критично для понимания: подход не появился готовым, он вырос под pressure.
 
@@ -5911,6 +5925,8 @@ timeline
 
 ## ЧАСТЬ IX — Цитаты автора и педагогические нюансы
 
+> 📚 **Справочник G (Reference).** Это не маршрут, а тематически сгруппированные дословные цитаты автора с комментариями. Стадии 0–10 ссылаются на нужные цитаты-якоря по месту.
+
 Эта часть собирает **дословные цитаты автора (Денис в диалоге с Максимом)** из двух YouTube-транскриптов. Цитаты тематически сгруппированы и сопровождаются комментарием, почему этот фрагмент важен.
 
 Транскрипты лежат в `_articles/`:
@@ -6057,6 +6073,8 @@ timeline
 ---
 
 ## ЧАСТЬ X — Приложения
+
+> 📚 **Приложения (Reference).** Это не маршрут, а справочные приложения (reading order, каталоги, чеклисты). Открываются по ссылкам из стадий и других частей.
 
 ### Appendix A — Reading order для оригинального проекта
 
