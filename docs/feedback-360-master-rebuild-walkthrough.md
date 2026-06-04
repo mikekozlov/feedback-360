@@ -362,6 +362,12 @@ flowchart TD
 7. **Implementation playbook** (`plans/implementation-playbook.md`): пошаговый чеклист 0-9; и `plans/how-we-plan.md` с units Epic/Feature + Epic DoD + Feature DoD + seed-as-contract.
 8. **Feature template** (`mbb/templates/feature.md`): каноничный шаблон vertical slice, чтобы по нему можно было завести новую feature page.
 
+> **Memory Bank — живой процесс, не разовая сборка (две дисциплины, которые заводят сразу):**
+>
+> **ADR-триггер — когда заводить новое решение.** Создавайте `adr/NNNN-*.md` (формат `Decision / Why / Trade-offs`), как только: (а) принято архитектурное решение с trade-offs, (б) выбран один из ≥2 вариантов, или (в) меняется граница areas/контракт. Шаги: завести ADR → добавить в `adr/index.md` (иначе orphan) → связать со spec/feature, которые его реализуют. Антипаттерн: решение «зашито» в коде/коммите без ADR — через полгода никто не вспомнит «почему так» (деградирует пирамида знаний, концепция 17).
+>
+> **Maintenance-loop — на КАЖДОМ слайсе.** Слайс изменил код → обнови затронутые `spec`/`FT`/`operation catalog`/`screen registry` → прогони `pnpm docs:audit` (зелёный `{ "ok": true }`) → нет orphan-файлов. Без этого банк превращается в «build-once артефакт Стадии 2». Механический enforcement — `docs:audit`; дисциплину держите вы.
+
 #### 📖 Что прочитать (REFERENCE_ROOT)
 
 - [[#Глава 2: Documentation Skeleton — Memory Bank]] — что лежит: canonical narrative стадии (Шаги 2.1-2.5: `mkdir` структуры, root index с annotated links, базовые спеки, формат ADR, playbook 0-9); зачем: пройти сборку skeleton ДО кода по шагам и увидеть паттерн аннотированных ссылок вживую.
@@ -1176,6 +1182,15 @@ flowchart TD
 4. **Структурный guard окружений.** В `packages/db/src/xe.ts` — `ensureXeAllowedEnvironment(environment)`: возвращает env только для `"local"` / `"beta"`, иначе бросает `forbidden`. Прод исключён из XE-операций на уровне кода (концепция 11).
 5. **Evidence policy.** В `verification-matrix.md` сделайте SSoT «что именно запускать» для каждого `FT`/`GS` и обязательную секцию `### EP-XXX execution evidence (YYYY-MM-DD)` с полями `what/where/how/quality_gate/acceptance_gate/result`. `EP-009` (`FT-0091..FT-0094`) — эталонный hardening-эпик.
 6. **Дисциплина процесса.** Маленький слайс хардненинга держите слайсом (см. `post-ep023-hardening-backlog.md`): правило эскалации — если разрослось за 4–5 слайсов или нужны новые acceptance-правила/CI-lane, повышайте до полного эпика, иначе не усложняйте процесс.
+7. **3 окружения + post-deploy verification (концепция 11 — выполнимая процедура, не только код-guard).** Объявите три окружения ключами `.env`: `DATABASE_URL` = local, `SUPABASE_BETA_DB_POOLER_URL` = beta, `SUPABASE_PROD_DB_POOLER_URL` = prod. После деплоя на beta — smoke против развёрнутого URL:
+
+```bash
+PLAYWRIGHT_BASE_URL=https://beta.go360go.ru pnpm --filter @feedback-360/web test:smoke:beta
+# apps/web/package.json → playwright --config playwright/playwright.config.mjs tests/smoke; CI: .github/workflows/beta-smoke.yml
+```
+
+   Критерий выхода: beta-smoke зелёный (`N passed`) ДО любого касания prod; прод агентами/XE — никогда (guard `ensureXeAllowedEnvironment` + ручная дисциплина). Полный runbook — `.memory-bank/spec/operations/runbook.md`.
+8. **Simplify & verify-against-plan pass (концепция 10 — отдельный проход перед `Completed`).** Триггер: gate зелёный, но фича ещё не `Completed`. Шаги: (1) сверь реализацию с планом/spec построчно — нет ли недовыполнения или «лишних» абстракций «на всякий случай»; (2) вычисти абстракции глубже 2 уровней; (3) перепрогони `pnpm checks`. Копируемый промпт: «Сверь реализацию FT-XXXX с её планом и spec построчно: отметь (а) пункты плана без реализации, (б) слои/абстракции, не оправданные ни одним требованием; предложи удаления, ничего не добавляй.» Критерий выхода: каждый пункт плана покрыт, лишних слоёв нет, `checks` всё ещё зелёный.
 
 #### 📖 Что прочитать (REFERENCE_ROOT)
 
