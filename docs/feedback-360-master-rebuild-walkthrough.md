@@ -113,6 +113,15 @@ source_transcripts:
 - **🔗 Выравнивание с автором** — какие из 24 концепций воплощает стадия + цитата-якорь.
 - **⚠️ Антипаттерны стадии · 🧩 Артефакты** — чего избегать и что сохранить как доказательство.
 
+### Контракт детерминизма ✅-блоков
+
+Во всех ✅-блоках встречаются конкретные литералы: UUID (`10000000-…-001`), имена сценариев (`S1_company_min`, `S4_campaign_draft`), номера миграций (`0000…0013`), `phase-id` XE, счётчики (`employees=8`). Это **детерминированные константы из seed и кода `REFERENCE_ROOT`**, а не «магические значения». Читайте их по одному правилу:
+
+- Артефакты, помеченные **`copy-verbatim`** (seed-карта `ids` + `seededAt`, имена миграций, `phase-id` XE-сценариев), воспроизводятся точь-в-точь **только** при дословном копировании из `REFERENCE_ROOT` — тогда ваши UUID/счётчики совпадут с чеклистом байт-в-байт.
+- Если вы **ведёте свои имена** (свой сценарий, свои UUID, своя нумерация) — критерий стадии становится **стабильность вывода между прогонами** (один вход → один и тот же выход), а не побайтовое совпадение с цифрами документа.
+
+Без этого различения вы не отличите собственную ошибку от «значения чужого репозитория». Поэтому каждый ✅, опирающийся на точные литералы, неявно ссылается на этот контракт.
+
 ### Два фиксированных корня и правила прохождения
 
 - `REFERENCE_ROOT` — оригинальный `feedback-360`: **читаете и изучаете**, но не используете как место для практики.
@@ -456,6 +465,21 @@ flowchart LR
 
 Снизу вверх (детали — [[#Глава 3: Database Layer — Drizzle ORM]] и [[#Module 3: DB baseline и seed runner]]):
 
+0. **Окружение БД — предпосылка всех ✅ ниже.** Без поднятого Postgres и заданного URL команды `db:migrate`/`db:health`/`seed`/`test:db` стартуют с недостижимого Given. Подними Postgres и создай `.env` (`copy-verbatim` из `.env.example`):
+
+```bash
+# Postgres через Docker (или используй уже установленный локальный Postgres с БД feedback360)
+docker run --name fb360-pg -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=feedback360 -p 5432:5432 -d postgres:15
+```
+
+```bash
+# .env в корне репозитория
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/feedback360
+# SUPABASE_DB_POOLER_URL=...   # облако Supabase (Session pooler) — приоритетнее DATABASE_URL
+```
+
+Рантайм читает `.env` через `getDatabaseUrl()` (`packages/db/src/connection-string.ts`), иначе бросает «Database URL is not set»; резолюция URL — `SUPABASE_DB_POOLER_URL ?? DATABASE_URL`. `createPool()` (`db.ts`) по умолчанию `serviceRole: true`, поэтому `migrate`/`seed`/`health` проходят FORCE-RLS из миграции `0002` под service-role-контекстом (`-c app.is_service_role=on`). В `drizzle.config.ts` тот же `??` плюс локальный дефолт `postgres://postgres:postgres@localhost:5432/feedback360` для drizzle-kit.
+
 1. **Пакет `packages/db`** и DB layer: `drizzle.config.ts` (`schema ./src/schema/index.ts`, `out ./drizzle`, dialect `postgresql`; URL = `SUPABASE_DB_POOLER_URL` `??` `DATABASE_URL` `??` локальный postgres).
 2. **Schema** (`src/schema/tables.ts`): multi-tenancy через `company_id` ([[#3.12. Multi-tenancy через company_id]]), `deleted_at` soft delete на `companies`/`employees`/`departments` ([[#3.13. Soft delete pattern]]), history-таблицы `start_at`/`end_at` ([[#3.14. Temporal history pattern]]), таблица `campaign_employee_snapshots` ([[#3.15. Snapshot pattern]]).
 3. **Миграции** в `drizzle/` (`0000..0013`): `0000_ft0002_baseline.sql` (`create table if not exists`, soft delete, temporal), `0002_ft0023_rls_deny_by_default.sql` (схема `app`, функции `app.is_service_role()`/`app.has_company_access(uuid)`, `ENABLE` + `FORCE` RLS — deny-by-default), `0003_ft0032_campaign_snapshots.sql`.
@@ -463,6 +487,8 @@ flowchart LR
 5. **Pool/DB factory** (`src/db.ts`): `createPool(context)` ставит per-connection GUC `-c app.is_service_role=on/off` и опционально `-c app.current_user_id=<userId>` — эти GUC питают RLS-функции из миграции `0002`.
 6. **CLI-обёртки**: `src/scripts/migrate.ts` (`db:migrate` → `Migrations applied successfully.`) и `src/scripts/health.ts` (`db:health` → `DB health-check passed.`), оба ставят `process.exitCode = 1` при падении.
 7. **Seed runner** (`src/seeds.ts`): `runSeedScenario` с advisory-lock `360360360`, `TRUNCATE ... RESTART IDENTITY CASCADE`, вставкой в одной `db.transaction`, детерминированными UUID и стабильными handles; snapshot-мост `src/snapshots.ts`. CLI-вход — команда `seed` в `packages/cli/src/legacy.ts` (`--scenario`, `--variant`, `--json`).
+
+> **Литеральные константы детерминизма** (`copy-verbatim` из `REFERENCE_ROOT` — иначе инвариант «те же UUID» недостижим). В начале `seeds.ts` зафиксированы `const seededAt = new Date("2026-01-01T09:00:00.000Z")` и карта `const ids = { companyMain: "10000000-0000-4000-8000-000000000001", companyA: "10000000-…-010", membershipHrAdmin: "11000000-…-001", employeeHrAdmin: "12000000-…-001", … }` с конвенцией префиксов (`1x…` — компании, `11x…` — membership, `12x…` — employee). UUID в строках берутся из `ids`, а не из `uuid().defaultRandom()`, поэтому каждый прогон даёт **те же** значения, что и в ✅. Свой сценарий → задайте собственные фиксированные `const` и сверяйтесь со **стабильностью** вывода, а не с цифрами документа (см. [[#Контракт детерминизма ✅-блоков]]).
 
 #### 📖 Что прочитать (REFERENCE_ROOT)
 
@@ -576,6 +602,31 @@ flowchart LR
 2. `packages/core`: `operationHandlers` map + `dispatchOperation()` (parse → known? → handler) + первый handler `runSystemPing`.
 3. `packages/client`: `OperationTransport` interface, `createInprocTransport`, `ClientRuntime.invokeOperation()`, `Feedback360Client` с методом `systemPing()`.
 4. `packages/cli`: `commander`-команда `ping` с `--json`, использующая `createInprocClient()`.
+
+**Wiring, без которого команды ✅ не резолвятся** (`copy-verbatim` — в оригинале **нет `bin`**, точка входа `src/index.ts`):
+
+```jsonc
+// packages/cli/package.json
+"exports": "./src/index.ts",
+"scripts": { "cli": "tsx src/index.ts" }
+
+// root package.json → scripts
+"db:migrate": "pnpm --filter @feedback-360/db db:migrate",
+"db:health":  "pnpm --filter @feedback-360/db db:health",
+"seed":       "pnpm --filter @feedback-360/cli cli --"
+```
+
+Тогда `pnpm seed seed --scenario S1_company_min --json` разворачивается в `tsx src/index.ts seed --scenario …` (первый `seed` — корневая обёртка, второй — `commander`-подкоманда), а `pnpm --filter @feedback-360/cli exec tsx src/index.ts -- ping --json` бьёт ту же точку входа напрямую.
+
+**Реестр операций** (`packages/core/src/index.ts`) — то, что связывает имя операции из CLI/клиента с core-хендлером:
+
+```ts
+const operationHandlers: Partial<Record<KnownOperation, OperationHandler>> = {
+  "system.ping": (request) => runSystemPing(request.input),  // sync: обёртка вытаскивает input
+  "membership.list": runMembershipList,                       // async: handler берёт request целиком
+};
+// dispatchOperation: parse → operationHandlers[op] → handler (нет записи в map → unknown_operation)
+```
 
 #### 📖 Что прочитать (REFERENCE_ROOT)
 
@@ -989,6 +1040,8 @@ Given-when-then: **Given** загружен seed с `$cmp1`/`$hrAdmin`, стар
 
 Результат — детерминированная связка: `screen_id (SCR-APP-HOME) ↔ testIdScope (scr-app-home) ↔ @screenId в JSDoc ↔ data-testid в DOM`. FT-0212 прогоняет её на seed-сценарии `S9_campaign_completed_with_ai` по маршрутам `/`, `/hr/employees`, `/hr/org`, `/questionnaires`, `/results/hr` и снимает screenshot-evidence с суффиксом `__(SCR-RESULTS-HR).png`.
 
+> ⓘ **ai-слайс — вне rebuild-scope.** Сам AI-пайплайн (`ai.runForCampaign`, переходы `processing_ai → completed`/`ai_failed`) в учебном репо **не строится**: seed `S9_campaign_completed_with_ai` ставит `campaigns.status = completed` напрямую, поэтому web-стадия не требует построенного AI. В [[#Стадия 6 — Policy-heavy домен|Стадии 6]] эти статусы лишь **объявлены** в `campaignLifecycleStatuses`; своими руками кампанию доводим до `ended`. Если решите строить ai-слайс — поставьте его между Стадиями 7 и 8.
+
 #### 📐 Диаграмма: thin web layer поверх того же client
 
 ```mermaid
@@ -1079,6 +1132,7 @@ Given-when-then: **Given** seed `S9_campaign_completed_with_ai` загружен
 - **Evidence-based acceptance.** Суть: фича `Completed` только когда (1) `checks` зелёный, (2) acceptance-сценарий прогнан **после** реализации, (3) команды + вывод + дата записаны в memory bank. Аналогия: не «я сделал», а подписанный акт выполненных работ с протоколом испытаний. Почему важно: «закодировал, типы проходят, в браузере работает» — это не evidence, это обещание.
 - **Изоляция окружений `local`/`beta`/`prod`.** Суть: три окружения, которые создаются всегда; агентские/тестовые операции структурно разрешены только в `local` и `beta`, прод исключён на уровне кода. Аналогия: испытания взрывчатки на полигоне, а не в жилом доме. Почему важно: агент с широкими полномочиями рано или поздно ошибётся — бета ловит ошибку до того, как она сотрёт боевую базу.
 - **Упрощение против over-engineering.** Суть: отдельная фаза ревью — вычистить ненужные абстракции, которые модель добавила «на всякий случай». Аналогия: редактор вычёркивает лишние слова, чтобы текст читался. Почему важно: упрощение — это **экономия внимания модели**: чем проще код, тем лучше будущий агент с ним справится.
+- **Happy path и error-ветки — в РАЗНЫХ свежих контекстах (концепция 8).** Суть: после зелёного happy-path открой **новый** контекст (или сабагент-оркестратор) с единственной задачей — перечислить все error/edge-ветки слайса и написать given-when-then на каждый `OperationError` code. Аналогия: корректор, который текст не писал, видит опечатки, которых не видит автор. Почему важно: «happy path в контексте слепит агента к ошибкам» — из того же контекста error-ветки систематически недопокрываются. Мини-шаг в 🏗️: на каждый typed-код ошибки слайса — отдельный acceptance, написанный в свежем контексте.
 
 #### 🔧 Иллюстративный пример: как закрывается слайс results-views
 
@@ -1286,7 +1340,7 @@ Given-when-then: **Given** другой XE-run уже активен, **When** �
 | 5 | Спецификация = шаги + grounding | 0, 2 | Часть IV фаза 2; Часть V гл.0 | «спецификация = набор шагов + грудинг» (ч1·т4) |
 | 6 | Вертикальные слайсы | 4, 5 | Часть II 2.1(3); Часть IX 9.4 | «единица ценности через все слои» (ч1·т4) |
 | 7 | Acceptance given-when-then, покрывает всю хотелку | 4, 5, 6, 7, 9 | Часть IX 9.5; антипаттерн 5 | «acceptance test тестирует вертикальный слайс» (ч1·т7) |
-| 8 | Happy Path + error в свежем контексте; оркестратор | 9 *(частично)* | Часть IV фазы 6–7 | «из одного контекста агент не видит все ошибки» (ч1·т6) |
+| 8 | Happy Path + error в свежем контексте; оркестратор | 9 | Стадия 9 (🧠 happy/error) + прим. ниже | «из одного контекста агент не видит все ошибки» (ч1·т6) |
 | 9 | Верификация как гигиена; пирамида тестов | 7, 9 | Часть V гл13; Часть IX 9.6 | «гигиена, как руки перед едой» (ч1·т7) |
 | 10 | Цикл под управлением; Opus «срезает углы»; simplify | 9 | Часть IX 9.9, 9.15, 9.17 | «упрощение даёт экономию внимания модели» (ч1·т8) |
 | 11 | 3 окружения local/beta/prod; верификация деплоя | 9 | Часть IX 9.8 | «пускать агента в прод — стать героем новостей» (ч1·т9) |
@@ -1306,7 +1360,7 @@ Given-when-then: **Given** другой XE-run уже активен, **When** �
 
 **Примечание о мета-концепциях (21–23).** Это концепции **уровня личного workflow автора**, не специфичные для самого feedback-360: они про инструментарий (MCP→Skill+CLI через MCPorter, reverse-engineering проекта в обобщённый скилл, выбор «файлы vs таск-трекеры», русский промпт / английский код). Для **воспроизведения проекта** они не обязательны, но важны для понимания, *как автор работает*. Если вы строите свой агентный workflow поверх этого rebuild — держите их в виду; в самом маршруте 0–10 они намеренно не превращены в стадии.
 
-**Примечание о концепции 8 (error-ветки в свежем контексте).** Автор подчёркивает: happy path и error-ветки лучше прорабатывать в **отдельных свежих контекстах** (или через оркестратор), потому что «happy path в контексте слепит агента к ошибкам». В стадийном пути это встроено в Стадию 9 (hardening) и в acceptance-практику Стадий 5–6, но как отдельный приём «оркестрации» вынесено за рамки rebuild.
+**Примечание о концепции 8 (error-ветки в свежем контексте).** Автор подчёркивает: happy path и error-ветки лучше прорабатывать в **отдельных свежих контекстах** (или через оркестратор), потому что «happy path в контексте слепит агента к ошибкам». В стадийном пути это **прожито** как отдельная концепция и мини-шаг в [[#Стадия 9 — Hardening, quality gates, evidence|Стадии 9]] (на каждый typed-код ошибки — отдельный acceptance в свежем контексте) и в acceptance-практике Стадий 5–6. Полноценная **оркестрация** (под-агенты, авто-разветвление контекстов) — за рамками rebuild, но сам приём разделения контекстов воспроизводим вручную.
 
 ---
 
@@ -1862,7 +1916,6 @@ graph TD
 
 import {
   type DispatchOperationInput,
-  type DispatchOutput,
   type KnownOperation,
   type OperationResult,
   isKnownOperation,
@@ -1871,6 +1924,14 @@ import {
   errorFromUnknown,
   errorResult,
 } from "@feedback-360/api-contract";
+
+// DispatchOutput НЕ импортируется из api-contract — это локальный для core union
+// всех Output-типов операций (по одному варианту на каждую запись operationHandlers):
+type DispatchOutput =
+  | SystemPingOutput
+  | CompanyUpdateProfileOutput
+  | MembershipListOutput
+  /* … по одному Output-типу на каждую операцию */;
 
 type OperationHandler = (
   request: DispatchOperationInput,
@@ -2148,6 +2209,32 @@ export const parseSystemPingOutput = (
 };
 ```
 
+Три функции той же границы, которые использует `dispatchOperation` и `createClientRuntime` (без их определения `tsc` на Стадии 4 не резолвит символы — `api-contract/src/v1/legacy.ts`):
+
+```typescript
+// throw при невалидной операции; input проходит как unknown; context — через parseOperationContext
+export const parseDispatchOperationInput = (value: unknown): DispatchOperationInput => {
+  /* ensureObject + ensureAllowedKeys(["operation","input","context"]) → { operation, input, context } */
+};
+
+// дискриминация по ok: при ok → parseOutput(data); иначе → parseOperationError(error)
+export const parseOperationResult = <Output>(
+  value: unknown,
+  parseOutput: (data: unknown) => Output,
+): OperationResult<Output> => {
+  /* ensureAllowedKeys(["ok","data","error"]); ok ? okResult(parseOutput(data)) : errorResult(...) */
+};
+
+// нормализует любую брошенную ошибку в OperationError (invalid_input-путь диспетчера)
+export const errorFromUnknown = (
+  error: unknown,
+  fallbackCode: OperationErrorCode = "invalid_input",
+  fallbackMessage = "Unexpected error.",
+): OperationError => {
+  /* message из error, code = fallbackCode */
+};
+```
+
 **Почему не Zod:**
 
 - Простота: parse-функции читаются как обычный TypeScript.
@@ -2260,6 +2347,26 @@ export const createHttpTransport = (
 > **Aha-момент.** In-proc transport вызывает core напрямую, HTTP transport делает POST к серверу — но оба возвращают **идентичный** `OperationResult<T>`. Тесты используют in-proc; production использует HTTP. Client layer **не добавляет бизнес-логики**.
 
 ### 3.11. ClientRuntime + Feedback360Client
+
+Типы, которые использует `createClientRuntime` (без их определения `tsc` не резолвит сигнатуру — `packages/client/src/shared/runtime.ts`):
+
+```typescript
+export type InvokeOperationParams<Output> = {
+  operation: string;
+  input: unknown;
+  context?: OperationContext;
+  parseOutput: (value: unknown) => Output;
+};
+
+export type ClientRuntime = {
+  invokeOperation: <Output>(
+    params: InvokeOperationParams<Output>,
+  ) => Promise<OperationResult<Output>>;
+  setActiveContext: (context: OperationContext) => OperationResult<OperationContext>;
+  getActiveContext: () => OperationContext;
+  // + setActiveCompany / прочие методы рантайма
+};
+```
 
 ```typescript
 export const createClientRuntime = (
@@ -2519,15 +2626,24 @@ export const notificationOutbox = pgTable(
 - **Peers / Subordinates** — сливаются в `Other` при количестве < порога.
 - **Self** — weight = 0% по умолчанию (самооценка не входит в weighted average, видна отдельно).
 
-Weight normalization при отсутствии группы:
+Weight normalization (`buildEffectiveGroupWeights`, `packages/db/src/results.ts`) — правило по **числу видимых групп**, а не пропорция:
 
 ```
-Default: manager 40%, peers 30%, subordinates 30%, self 0%
+Базовые веса: manager 40, peers 30, subordinates 30, self 0 (self вне overallScore).
+В расчёт берутся только видимые группы (visibility="shown" и значение есть);
+merged peers/subordinates сворачиваются в Other.
 
-Если subordinates отсутствуют (или их < 3):
-  manager: 40 / (40 + 30) * 100 = 57%
-  peers:   30 / (40 + 30) * 100 = 43%
+0 видимых групп → все 0
+1 группа        → она = 100
+2 группы        → 50 / 50      ← ровно поровну (НЕ пропорция!)
+3+ групп        → пропорция: round(weight / Σweight * 100)
+
+Пример (subordinates скрыты, остаются manager+peers):
+  manager 50, peers 50          ← канон (две группы → 50/50)
+  57/43 — устаревшая иллюстрация, ПРОТИВОРЕЧИТ коду results.ts (там жёстко 50/50).
 ```
+
+Тест-векторы (сумма всегда 100): `{manager}`→`100`; `{manager,peers}`→`50/50`; `{manager,peers,subordinates}`→`40/30/30` (пропорция от базовых 40/30/30); группа `< 3` оценщиков скрыта (`hide`) или слита в `Other` (`merge_to_other`).
 
 Role-based result views — три операции, три уровня доступа:
 
@@ -3216,6 +3332,17 @@ EP-008 UI — web app поверх client (последний!).
 3. Читает FT-документ конкретной фичи.
 4. Проходит grounding checklist.
 
+Как **переиспользуемый промпт** (копируйте перед КАЖДЫМ слайсом, в свежем контексте — это ритуал, а не разовый шаг):
+
+```markdown
+## Context warming (выполни перед реализацией FT-XXXX)
+1. Прочитай .memory-bank/index.md и пройди по annotated links к specs этой подсистемы.
+2. Прочитай FT-документ FT-XXXX и его секцию Context (SSoT-ссылки).
+3. Прочитай architecture-guardrails и operation catalog.
+4. ОТЧИТАЙСЯ: перечисли загруженные specs / FT / guardrails / операции.
+Критерий прогрева: ты можешь назвать их без повторного чтения. Не пиши код, пока не отчитался.
+```
+
 #### Checkpoint фазы 4
 
 - `AGENTS.md` существует, не содержит «правил» — только ссылки.
@@ -3453,8 +3580,12 @@ Acceptance:
 - Обнови FT-документ: evidence.
 - Обнови operation catalog.
 
-## Acceptance
-Прогони scenario из FT-документа. Запиши evidence.
+## Acceptance (авторинг сценария, а не только прогон)
+1. Выведи given-when-then из «хотелки» FT (что наблюдаемо меняется в системе).
+2. Выбери существующий seed-сценарий ИЛИ создай новый (фиксированные const-UUID + стабильные handles) — см. контракт детерминизма.
+3. Привяжи проверки к **handles**, не к id, подсмотренным в БД руками.
+4. Прогони сценарий через CLI `--json` ПОСЛЕ реализации.
+5. Запиши evidence (дата + команды + вывод) в verification-matrix.
 ```
 
 #### Порядок domain slices
@@ -3562,6 +3693,40 @@ UI вызывает ТЕ ЖЕ операции, что и CLI.
 
 Стабилизация: **feature-area refactor**, XE scenarios, screen IDs, design system. Это **отдельные осознанные волны**, а не «вкрапления» в feature work.
 
+#### Промпт #18a: Quality-gate & test-pyramid build-out
+
+Строит сам аппарат проверки Стадии 9 (то, чего нет у #18 — #18 делает feature-area refactor Стадии 10).
+
+```markdown
+## Grounding
+- `.memory-bank/plans/verification-matrix.md` (SSoT FT→тест + evidence-policy, эпик EP-009).
+- `.memory-bank/spec/testing/` (стратегия, 4 уровня пирамиды).
+
+## Задача
+Собери quality-аппарат как композицию листьев, без новых фреймворков:
+
+### 1) Leaf-скрипты в каждом пакете (package.json)
+- `test` — unit/contract без БД: `cross-env FEEDBACK360_SKIP_DB_TESTS=1 vitest run`.
+- `test:db` — fast-lane с реальной БД: `vitest run --testTimeout=45000 --maxWorkers=1 --no-file-parallelism` по curated-файлам.
+- `test:db:full` — полный свип `src/ft/*.test.ts` (минус `*-no-db.test.ts`).
+
+### 2) Композиция gate в root package.json
+- `test:db` = `pnpm --filter @feedback-360/db test:db && … client && … core`.
+- `checks` = `pnpm lint && pnpm typecheck && pnpm test && pnpm test:db && pnpm --filter @feedback-360/web build` — РОВНО в этом порядке.
+
+### 3) 4 уровня пирамиды
+L1 unit+contract → L2 integration (реальная БД) → L3 CLI-acceptance (seed+handles, `--json`) → L4 e2e на beta (Playwright).
+
+### 4) Env-guard
+`packages/db/src/xe.ts` → `ensureXeAllowedEnvironment(env)`: только `local`/`beta`, иначе `forbidden`. Прод структурно недоступен для XE.
+
+### 5) Evidence-policy
+В `verification-matrix.md` — секция `### EP-XXX execution evidence (YYYY-MM-DD)` с полями `what/where/how/quality_gate/acceptance_gate/result`. Без неё FT не Completed.
+
+## Acceptance
+`pnpm checks` зелёный целиком (5 шагов); для слайса покрыты все 4 уровня; в `verification-matrix.md` записан evidence-блок с датой.
+```
+
 #### Промпт #18: Feature-area refactor
 
 ```markdown
@@ -3624,7 +3789,8 @@ UI вызывает ТЕ ЖЕ операции, что и CLI.
 | 6: Delivery loop | #12, #13, #14 | Contract + Core + Client + CLI | `ping --json` ok |
 | 7: Domain slices | #15 (×N) | 40+ operations | `pnpm checks` green |
 | 8: UI | #16, #17 | Next.js routes + pages | UI = same ops as CLI |
-| 9: Hardening | #18 | Feature areas + XE + screens | XE end-to-end pass |
+| 9: Hardening (gate) | #18a | leaf-скрипты, `checks` (5 шагов), 4-уровневая пирамида, xe-guard, evidence | `pnpm checks` зелёный |
+| 9: Hardening (refactor → Стадия 10) | #18 | Feature areas + XE + screens | XE end-to-end pass |
 
 ---
 
@@ -3742,6 +3908,8 @@ pnpm init
 ```
 
 Ключевой script — `checks`: последовательный прогон lint, typecheck и test. Это **quality gate** — фича не считается готовой, пока `checks` не зелёный.
+
+> ⓘ **SSoT для `checks`.** Здесь показана **усечённая ранняя** версия (есть только `lint`/`typecheck`/`test`). Канонический `checks` (как в реальном root `package.json` и в [[#Стадия 9 — Hardening, quality gates, evidence|Стадии 9]]) — **пятишаговый**: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:db && pnpm --filter @feedback-360/web build`. Шаги `test:db`/`web build` добавляются по мере появления БД (Стадия 3) и web (Стадия 8) — на Стадии 1 их в `checks` ещё нет.
 
 #### Шаг 1.3: Workspace configuration
 
@@ -4471,6 +4639,8 @@ export type MembershipListOutput = {
   }>;
 };
 ```
+
+> ⚠️ **Doc-vs-code (намеренный контраст, см. [[#Стадия 5 — Первые domain slices]]).** В реальном коде ключ — **`items`**, не `memberships`: `export type MembershipListOutput = { items: MembershipListItem[] }` (`api-contract/src/v1/legacy.ts`). Для **зелёного** acceptance Стадии 5 копируйте форму с `items`; `memberships` здесь оставлен как иллюстрация рассинхрона «документ ↔ код».
 
 #### Шаг 8.2: Core handler
 
@@ -6256,7 +6426,8 @@ timeline
 | 15 | 7: Domain slices | Универсальный шаблон реализации FT |
 | 16 | 8: UI | UI foundation |
 | 17 | 8: UI | Feature-specific UI page |
-| 18 | 9: Hardening | Feature-area refactor |
+| 18a | 9: Hardening | Quality-gate & test-pyramid build-out (→ Стадия 9) |
+| 18 | 9: Hardening | Feature-area refactor (→ Стадия 10) |
 
 Полные тексты промптов — в Части IV.
 
